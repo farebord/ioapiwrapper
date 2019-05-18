@@ -1,13 +1,19 @@
 import requests
 
+
 class IOBase:
     URL_ACCOUNT_STATE = "/api/v2/estadocuenta"
     URL_MARKET_RATES = "/api/v2/Cotizaciones/{instrument}/{panel}/{country}"
     URL_MUTUAL_FUND = "/api/v2/Titulos/FCI/{symbol}"
+    URL_MUTUAL_FUND_IN_MARKET = "/api/v2/{market}/Titulos/{symbol}"
+    URL_MUTUAL_FUND_OPTIONS = "/api/v2/{market}/Titulos/{symbol}/Opciones"
     URL_MUTUAL_FUNDS = "/api/v2/Titulos/FCI"
     URL_MUTUAL_FUNDS_ADMINS = "/api/v2/Titulos/FCI/Administradoras"
     URL_MUTUAL_FUNDS_TYPES = "/api/v2/Titulos/FCI/TipoFondos"
+    URL_INSTRUMENTS = "/api/v2/{country}/Titulos/Cotizacion/Instrumentos"
+    URL_OPERATION = "/api/v2/operaciones/{number}"
     URL_OPERATIONS = "/api/v2/operaciones/"
+    URL_OPERATIONS_DELETE = "/api/v2/operaciones/{number}"
     URL_PORTFOLIO = "/api/v2/portafolio/{country}"
     URL_TOKEN = "/token"
 
@@ -28,18 +34,39 @@ class IOWrapper(IOBase):
         self.refresh_token = response.get('refresh_token')
         self.token_issued = response.get('.issued')
         self.token_expires = response.get('.expires') 
-       
+    
+    def delete_operation(self, number):
+        request = requests.delete(self.api + self.URL_OPERATIONS_DELETE.format(number),
+                                  headers=self._get_bearer_header())
+        return request.json()
+
     def get_account_state(self):
         request = requests.get(self.api + self.URL_ACCOUNT_STATE, headers=self._get_bearer_header())
         return request.json()
 
+    def get_instruments(self, country):
+        request = requests.get(self.api + self.URL_INSTRUMENTS.format(country=country),
+                               headers=self._get_bearer_header())
+        return request.json()
+
     def get_market_rates(self, instrument, panel, country):
-        request = requests.get(self.api + self.URL_MARKET_RATES.format(instrument=instrument, panel=panel, country=country),
+        request = requests.get(self.api + self.URL_MARKET_RATES.format(instrument=instrument, panel=panel,
+                                                                       country=country),
                                headers=self._get_bearer_header())
         return request.json()
 
     def get_mutual_fund(self, symbol):
         request = requests.get(self.api + self.URL_MUTUAL_FUND.format(symbol=symbol),
+                               headers=self._get_bearer_header())
+        return request.json()
+
+    def get_mutual_fund_options(self, market, symbol):
+        request = requests.get(self.api + self.URL_MUTUAL_FUND_OPTIONS.format(market=market, symbol=symbol),
+                               headers=self._get_bearer_header())
+        return request.json()
+
+    def get_mutual_fund_in_market(self, market, symbol):
+        request = requests.get(self.api + self.URL_MUTUAL_FUND_IN_MARKET.format(market=market, symbol=symbol),
                                headers=self._get_bearer_header())
         return request.json()
 
@@ -59,11 +86,16 @@ class IOWrapper(IOBase):
         request = requests.get(self.api + self.URL_PORTFOLIO.format(country=country), headers=self._get_bearer_header())
         return request.json()
 
+    def get_operation(self, number):
+        request = requests.get(self.api + self.URL_OPERATION.format(number=number), headers=self._get_bearer_header())
+        return request
+
     def get_operations(self):
         request = requests.get(self.api + self.URL_OPERATIONS, headers=self._get_bearer_header())
         return request.json()
 
     def get_token(self, username=None, password=None, refresh_token=None, grant_type="password"):
+        payload = {}
         if grant_type == "password":
             payload = {"username": username, "password": password, "grant_type": grant_type}
         elif grant_type == "refresh_token":
